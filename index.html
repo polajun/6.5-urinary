@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>배설계 확인 문제</title>
+<style>
+  :root {
+    --bg: #f3f7f5;
+    --card: #ffffff;
+    --text: #1f2a26;
+    --muted: #63736d;
+    --line: #d9e4df;
+    --accent: #1f8a6a;
+    --ok: #1f8a4a;
+    --ok-soft: #dcf3e4;
+    --bad: #c23b3b;
+    --bad-soft: #fbe2e2;
+    --box: #f6f9f8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141a18;
+      --card: #1d2523;
+      --text: #e6eeeb;
+      --muted: #9aaba5;
+      --line: #33403c;
+      --accent: #4cc39b;
+      --ok: #5fd28c;
+      --ok-soft: #1c3a28;
+      --bad: #ef7b7b;
+      --bad-soft: #3d2222;
+      --box: #232d2a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 16px; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+  header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; flex: none; }
+  header h1 { font-size: 1.3rem; margin: 0; }
+  header .sub { color: var(--muted); font-size: 0.95rem; }
+  .progress { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 14px; flex: none; }
+  .progress > div { height: 100%; background: var(--accent); transition: width .25s; }
+  .card {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 1.4em 1.6em; box-shadow: 0 2px 10px rgba(0,0,0,.04); font-size: 20px;
+  }
+  .q { font-size: 1.3em; font-weight: 600; margin: 0 0 .8em; }
+  .q .num { color: var(--accent); margin-right: 6px; }
+  .bogi { border: 1px solid var(--line); background: var(--box); border-radius: 10px; padding: .7em 1em; margin-bottom: .9em; font-size: 1.05em; }
+  .bogi .t { text-align: center; font-weight: 700; margin-bottom: .3em; }
+  .bogi p { margin: .2em 0; }
+  .opts { display: grid; gap: .5em; }
+  .opt {
+    display: flex; gap: .7em; align-items: center; text-align: left;
+    width: 100%; padding: .6em 1em; font: inherit; font-size: 1.1em; color: var(--text);
+    background: var(--card); border: 2px solid var(--line); border-radius: 12px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:disabled { cursor: default; }
+  .opt .n { font-weight: 700; min-width: 1.6em; }
+  .opt.correct { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+  .sa { display: flex; gap: .5em; flex-wrap: wrap; }
+  .sa input {
+    flex: 1 1 260px; font: inherit; font-size: 1.1em; padding: .6em .9em; color: var(--text);
+    background: var(--card); border: 2px solid var(--line); border-radius: 12px;
+  }
+  .sa input:focus { outline: none; border-color: var(--accent); }
+  .btn {
+    font: inherit; font-size: 1rem; font-weight: 700; padding: 12px 20px; border-radius: 12px; cursor: pointer;
+    border: 2px solid var(--accent); background: var(--accent); color: #fff;
+  }
+  .card .btn { font-size: 1em; padding: .65em 1.1em; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .feedback { margin-top: .9em; padding: .8em 1em; border-radius: 12px; display: none; font-size: 1.05em; }
+  .feedback.show { display: block; }
+  .feedback.ok { background: var(--ok-soft); border: 1px solid var(--ok); }
+  .feedback.bad { background: var(--bad-soft); border: 1px solid var(--bad); }
+  .feedback.info { background: var(--box); border: 1px solid var(--line); }
+  .feedback b.r { font-size: 1.1em; }
+  .dot.res { width: auto; padding: 0 12px; border-radius: 99px; }
+  .nav { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; flex: none; }
+  .dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--muted); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+  .dot.cur { border-color: var(--accent); color: var(--accent); }
+  .dot.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .dot.bad { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .dot.retry { background: #e0952b; border-color: #e0952b; color: #fff; }
+  .dot { display: inline-flex; align-items: center; justify-content: center; cursor: default; }
+  .dot.todo { opacity: .35; }
+  .lock { color: var(--muted); font-size: .9em; margin: .5em 0 0; }
+  .result h2 { margin-top: 0; }
+  .result .score { font-size: 2.6em; font-weight: 800; color: var(--accent); margin: .2em 0 .5em; }
+  .result table { width: 100%; border-collapse: collapse; font-size: 1em; }
+  .result th, .result td { border-bottom: 1px solid var(--line); padding: .35em .4em; text-align: left; }
+  .hint { color: var(--muted); font-size: .85rem; text-align: center; margin: 8px 0 0; flex: none; }
+  @media (max-width: 560px) {
+    .card { padding: 1em; }
+    .dot { width: 26px; height: 26px; font-size: .75rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>❷ 배설계 확인 문제</h1>
+    <span class="sub">Ⅵ. 동물과 에너지 – 2. 호흡과 배설</span>
+  </header>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="card" id="card"></div>
+  <div class="nav">
+    <div class="dots" id="dots"></div>
+  </div>
+</div>
+
+<script>
+const Q = [
+  { type: "mc",
+    q: "다음 중 '배설'의 뜻으로 옳은 것은?",
+    opts: ["음식물을 잘게 분해하여 흡수하는 과정",
+           "산소를 받아들이고 이산화 탄소를 내보내는 과정",
+           "요소와 같은 노폐물을 걸러 몸 밖으로 내보내는 과정",
+           "소화되지 않은 음식물 찌꺼기를 항문으로 내보내는 과정",
+           "혈액이 온몸을 돌며 물질을 운반하는 과정"],
+    ans: 2,
+    exp: "배설은 요소와 같은 노폐물을 걸러 몸 밖으로 내보내는 과정이다. ④는 배출에 해당한다." },
+  { type: "sa",
+    q: "콩팥에서 만들어진 오줌이 몸 밖으로 나가기 전에 잠시 저장되는 기관의 이름을 쓰시오.",
+    keys: [["방광"]], display: "방광",
+    exp: "오줌은 오줌관을 지나 방광에 저장되었다가 요도를 통해 몸 밖으로 나간다." },
+  { type: "mc",
+    q: "단백질이 분해될 때 생기는 암모니아는 간에서 독성이 약한 물질로 바뀐 뒤 콩팥에서 오줌으로 나갑니다. 간에서 바뀐 이 물질은?",
+    opts: ["아미노산", "요산", "질산", "요소", "질소"],
+    ans: 3,
+    exp: "암모니아는 간에서 요소로 바뀌고, 요소는 콩팥에서 걸러져 오줌으로 나간다." },
+  { type: "sa",
+    q: "네프론을 이루는 구조 3가지를 쓰시오.",
+    keys: [["토리"], ["보먼주머니"], ["세뇨관"]], display: "토리, 보먼주머니, 세뇨관",
+    exp: "네프론은 오줌을 만드는 기본 단위로, 토리, 보먼주머니, 세뇨관으로 이루어져 있다." },
+  { type: "mc",
+    q: "오줌이 만들어져 몸 밖으로 나가는 경로를 순서대로 옳게 나열한 것은?",
+    opts: ["콩팥 → 방광 → 오줌관 → 요도",
+           "콩팥 → 오줌관 → 방광 → 요도",
+           "콩팥 → 요도 → 방광 → 오줌관",
+           "방광 → 콩팥 → 오줌관 → 요도",
+           "오줌관 → 콩팥 → 방광 → 요도"],
+    ans: 1,
+    exp: "콩팥에서 만들어진 오줌은 오줌관 → 방광 → 요도를 거쳐 몸 밖으로 나간다." },
+  { type: "sa",
+    q: "오줌 생성 과정 중 혈액 속의 포도당, 아미노산, 물, 요소 등이 토리에서 보먼주머니로 이동하는 과정을 무엇이라고 하는지 쓰시오.",
+    keys: [["여과"]], display: "여과",
+    exp: "토리 → 보먼주머니로 물질이 이동하는 과정은 여과이다." },
+  { type: "mc",
+    q: "오줌 생성 과정과 물질의 이동 경로를 옳게 짝 지은 것은?",
+    opts: ["여과 – 세뇨관 → 모세혈관",
+           "여과 – 보먼주머니 → 토리",
+           "재흡수 – 세뇨관 → 모세혈관",
+           "재흡수 – 모세혈관 → 세뇨관",
+           "분비 – 세뇨관 → 모세혈관"],
+    ans: 2,
+    exp: "여과: 토리 → 보먼주머니 / 재흡수: 세뇨관 → 모세혈관 / 분비: 모세혈관 → 세뇨관" },
+  { type: "sa",
+    q: "토리에서 보먼주머니로 여과된 물질 중, 세뇨관에서 모세혈관으로 100% 재흡수되어 건강한 사람의 오줌에서는 검출되지 않는 물질 두 가지를 쓰시오.",
+    keys: [["포도당"], ["아미노산"]], display: "포도당, 아미노산",
+    exp: "포도당과 아미노산은 여과된 뒤 세뇨관에서 모세혈관으로 100% 재흡수된다." },
+  { type: "mc",
+    q: "배설에 관한 설명으로 옳은 것만을 <보기>에서 있는 대로 고른 것은?",
+    bogi: ["ㄱ. 탄수화물, 지방, 단백질이 분해될 때 공통적으로 물과 이산화 탄소가 생성된다.",
+           "ㄴ. 암모니아는 콩팥에서 요소로 바뀐 뒤 오줌으로 나간다.",
+           "ㄷ. 여과되지 못한 노폐물은 모세혈관에서 세뇨관으로 분비된다.",
+           "ㄹ. 단백질은 토리에서 보먼주머니로 여과된 뒤 세뇨관에서 모두 재흡수된다."],
+    opts: ["ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄹ", "ㄷ, ㄹ", "ㄱ, ㄷ, ㄹ"],
+    ans: 1,
+    exp: "ㄴ: 암모니아가 요소로 바뀌는 곳은 콩팥이 아니라 간이다. ㄹ: 단백질은 크기가 커서 토리에서 보먼주머니로 여과되지 않는다." },
+  { type: "sa",
+    q: "콩팥으로 들어가는 혈액과 콩팥에서 나오는 혈액을 비교했을 때, 콩팥에서 걸러져 오줌으로 빠져나가므로 콩팥에서 나오는 혈액에서 농도가 크게 줄어드는 노폐물(단백질 분해로 생긴 것)의 이름을 쓰시오.",
+    keys: [["요소"]], display: "요소",
+    exp: "요소는 콩팥에서 걸러져 오줌으로 나가므로 콩팥에서 나오는 혈액에서는 농도가 낮아진다." }
+];
+
+const NUM = ["①", "②", "③", "④", "⑤"];
+// solved: 정답을 맞혔는지, wrong: 틀린 횟수, picks: 객관식에서 틀리게 고른 보기, last: 방금 틀렸는지
+const freshState = () => ({ solved: false, wrong: 0, picks: [], text: "", last: null });
+let state = Q.map(freshState);
+let cur = 0;
+
+// 새로고침하면 항상 처음부터 다시 풀도록 진행 상황을 저장하지 않음
+// (예전 버전에서 저장된 진행 상황이 남아 있으면 지움)
+try { localStorage.removeItem("quiz-6-5-excretion"); } catch (e) {}
+
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const norm = s => s.replace(/\s+/g, "");
+
+function checkSA(q, text) {
+  const t = norm(text);
+  return t.length > 0 && q.keys.every(alts => alts.some(k => t.includes(norm(k))));
+}
+
+function render() {
+  $("bar").style.width = ((cur + 1) / (Q.length + 1) * 100) + "%";
+  renderDots();
+
+  if (cur === Q.length) return renderResult();
+
+  const q = Q[cur], s = state[cur];
+  const done = s.solved;
+  let html = `<p class="q"><span class="num">${cur + 1}.</span>${esc(q.q)}</p>`;
+
+  if (q.bogi) {
+    html += `<div class="bogi"><div class="t">&lt;보기&gt;</div>${q.bogi.map(b => `<p>${esc(b)}</p>`).join("")}</div>`;
+  }
+
+  if (q.type === "mc") {
+    html += `<div class="opts">${q.opts.map((o, i) => {
+      let cls = "opt";
+      if (done && i === q.ans) cls += " correct";
+      else if (s.picks.includes(i)) cls += " wrong";
+      const off = done || s.picks.includes(i);
+      return `<button class="${cls}" data-i="${i}" ${off ? "disabled" : ""}><span class="n">${NUM[i]}</span><span>${esc(o)}</span></button>`;
+    }).join("")}</div>`;
+  } else {
+    html += `<div class="sa">
+        <input id="ans" type="text" placeholder="정답을 입력하세요" value="${esc(s.text)}" ${done ? "disabled" : ""} autocomplete="off">
+        <button class="btn" id="check" ${done ? "disabled" : ""}>제출</button>
+      </div>`;
+  }
+
+  html += `<div class="feedback" id="fb"></div>`;
+  if (!done) html += `<p class="lock">🔒 정답을 맞혀야 다음 문제로 넘어갈 수 있어요.</p>`;
+  $("card").innerHTML = html;
+
+  if (q.type === "mc") {
+    document.querySelectorAll(".opt:not(:disabled)").forEach(b => b.onclick = () => {
+      const i = +b.dataset.i;
+      if (i === q.ans) { s.solved = true; s.last = "ok"; }
+      else { s.picks.push(i); s.wrong++; s.last = "bad"; }
+      render();
+    });
+  } else if (!done) {
+    const inp = $("ans");
+    inp.oninput = () => s.text = inp.value;
+    inp.onkeydown = e => { if (e.key === "Enter") { e.stopPropagation(); $("check").click(); } };
+    $("check").onclick = () => {
+      if (!norm(inp.value)) { inp.focus(); return; }
+      s.text = inp.value;
+      if (checkSA(q, s.text)) { s.solved = true; s.last = "ok"; }
+      else { s.wrong++; s.last = "bad"; }
+      render();
+    };
+    inp.focus();
+    if (s.last === "bad") inp.select();
+  }
+
+  if (s.last) showFeedback(q, s);
+  fit();
+}
+
+function showFeedback(q, s) {
+  const fb = $("fb");
+  if (s.solved) {
+    const answer = q.type === "mc" ? `${NUM[q.ans]} ${esc(q.opts[q.ans])}` : esc(q.display);
+    fb.className = "feedback show ok";
+    const label = cur === Q.length - 1 ? "결과 보기 ▶" : "다음 문제 ▶";
+    fb.innerHTML = `<b class="r">⭕ 정답입니다!</b><br>정답: <b>${answer}</b><br>해설: ${esc(q.exp)}
+      <div style="text-align:right;margin-top:.6em"><button class="btn" id="go">${label}</button></div>`;
+    $("go").onclick = () => { cur++; render(); };
+  } else {
+    fb.className = "feedback show bad";
+    fb.innerHTML = `<b class="r">❌ 틀렸어요. 다시 풀어 보세요.</b>`;
+  }
+}
+
+// 진행 상황 표시용 (눌러서 이동할 수 없음 – 앞으로는 '다음 문제' 버튼으로만 이동)
+function renderDots() {
+  $("dots").innerHTML = Q.map((_, i) => {
+    const s = state[i];
+    let cls = "dot";
+    if (s.solved) cls += s.wrong === 0 ? " ok" : " retry";
+    else if (s.wrong > 0) cls += " bad";
+    if (i === cur) cls += " cur";
+    if (i > cur) cls += " todo";
+    return `<span class="${cls}">${i + 1}</span>`;
+  }).join("") + `<span class="dot res${cur === Q.length ? " cur" : " todo"}">결과</span>`;
+}
+
+function renderResult() {
+  const ok = state.filter(s => s.wrong === 0).length;
+  const rows = Q.map((q, i) => {
+    const w = state[i].wrong;
+    const mark = w === 0 ? "⭕ 한 번에 맞힘" : `🔁 ${w}번 틀린 뒤 맞힘`;
+    const ans = q.type === "mc" ? NUM[q.ans] : q.display;
+    return `<tr><td>${i + 1}</td><td>${esc(ans)}</td><td>${mark}</td></tr>`;
+  }).join("");
+  $("card").innerHTML = `<div class="result">
+      <h2>결과 <small style="font-size:.55em;color:var(--muted);font-weight:500">한 번에 맞힌 문제 수</small></h2>
+      <div class="score">${ok} / ${Q.length}</div>
+      <table><thead><tr><th>번호</th><th>정답</th><th>결과</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  fit();
+}
+
+// 카드 안의 내용이 스크롤 없이 한 화면에 모두 보이도록 글자 크기를 자동으로 맞춤
+function fit() {
+  const c = $("card");
+  let fs = window.innerWidth < 560 ? 17 : 22;
+  c.style.fontSize = fs + "px";
+  while (c.scrollHeight > c.clientHeight && fs > 10) {
+    fs -= 0.5;
+    c.style.fontSize = fs + "px";
+  }
+}
+window.addEventListener("resize", fit);
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  // 정답을 맞힌 뒤 Enter를 한 번 더 누르면 다음 문제로 (제출할 때 누른 Enter와는 별개)
+  if (e.key === "Enter" && !e.repeat && $("go")) { e.preventDefault(); $("go").click(); }
+});
+
+render();
+</script>
+</body>
+</html>
